@@ -4,7 +4,7 @@
     using System;
     using System.Collections.Generic;
 
-    [Route("api")]
+    [Route("/")]
     [ApiController]
     public class FixturesController : FixtureServiceControllerBase
     {
