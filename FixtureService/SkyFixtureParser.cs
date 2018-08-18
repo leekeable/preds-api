@@ -68,6 +68,7 @@
                     }
                     else if (node.Name == "h5")
                     {
+                        // on a league fixtures page, the competition is in the page title
                         competition = GetCompetition(node);
                         logger.Debug($"Competition found {node.OuterHtml}");
                     }
@@ -99,7 +100,6 @@
                             ret.Fixtures.Add(f);
                         }
                     }
-                    ret.StatusCode = System.Net.HttpStatusCode.OK;
                 }
                 catch (Exception ex)
                 {
@@ -107,7 +107,8 @@
                     ret.StatusCode = System.Net.HttpStatusCode.InternalServerError;
                 }
             }
-            
+
+            ret.StatusCode = System.Net.HttpStatusCode.OK;
             return ret;
         }
 
