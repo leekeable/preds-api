@@ -1,4 +1,4 @@
-﻿namespace FixtureService.Controllers
+﻿namespace FixtureService.Infrastructure
 {
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;

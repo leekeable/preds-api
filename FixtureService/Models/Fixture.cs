@@ -1,10 +1,11 @@
-﻿namespace FixtureService
+﻿namespace FixtureService.Models
 {
     using Newtonsoft.Json;
     using System;
 
     public class Fixture
     {
+        public int Id { get; set; }
         public string HomeTeam { get; set; }
         public string AwayTeam { get; set; }
         public string Competition { get; set; }

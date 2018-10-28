@@ -1,6 +1,7 @@
-﻿namespace FixtureService
+﻿namespace FixtureService.ScreenScraping
 {
-    using System.Collections.Generic;
+    using FixtureService.Models;
+
     public interface IFixtureParser
     {
         FixtureResponse GetFixtures();

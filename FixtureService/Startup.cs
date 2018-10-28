@@ -8,8 +8,6 @@ using Swashbuckle.AspNetCore.Swagger;
 
 namespace FixtureService
 {
-
-    // TODO: Add in-memory Caching
     // TODO: Add Oauth2
 
     public class Startup
@@ -24,6 +22,7 @@ namespace FixtureService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors();
             services.AddMemoryCache();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
             .AddJsonOptions(o =>
@@ -35,7 +34,6 @@ namespace FixtureService
             {
                 c.SwaggerDoc("v1", new Info { Title = "FootyPreds API", Version = "v1" });
             });
-  
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -62,6 +60,9 @@ namespace FixtureService
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "FootyPreds API V1");
                 c.RoutePrefix = string.Empty;
             });
+
+            app.UseCors(builder =>
+                builder.AllowAnyOrigin());
 
             app.UseMvc();
         }

@@ -1,5 +1,6 @@
-﻿namespace FixtureService
+﻿namespace FixtureService.ScreenScraping
 {
+    using FixtureService.Models;
     using HtmlAgilityPack;
     using NLog;
     using System;
@@ -78,6 +79,7 @@
                         awayteam = GetAwayTeam(node);
 
                         var status = GetStatus(node);
+                        var id = GetId(node);
 
                         logger.Debug($"Teams and scores found {node.OuterHtml}");
 
@@ -86,6 +88,7 @@
                             // add to results
                             var f = new Fixture
                             {
+                                Id = id,
                                 HomeTeam = hometeam,
                                 AwayTeam = awayteam,
                                 Kickoff = kickoff,
@@ -134,6 +137,13 @@
             var statusNode = p.SelectSingleNode("//*[@data-status]");
             var statattrib = statusNode.Attributes["data-status"].Value;
             return statattrib;
+        }
+
+        private int GetId(HtmlNode p)
+        {
+            var statusNode = p.SelectSingleNode("//*[@data-item-id]");
+            var statattrib = statusNode.Attributes["data-item-id"].Value;
+            return int.Parse(statattrib);
         }
 
         private string GetAwayTeam(HtmlNode p)

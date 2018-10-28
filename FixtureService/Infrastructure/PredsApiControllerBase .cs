@@ -1,8 +1,8 @@
-﻿namespace FixtureService.Controllers
+﻿namespace FixtureService.Infrastructure
 {
     using Microsoft.AspNetCore.Mvc;
 
-    public class FixtureServiceControllerBase : ControllerBase
+    public class PredsApiControllerBase : ControllerBase
     {
         protected InternalServerErrorObjectResult InternalServerError()
         {
