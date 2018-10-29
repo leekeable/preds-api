@@ -4,19 +4,12 @@
     using HtmlAgilityPack;
     using NLog;
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     public class SkyResultParser : IFixtureParser
     {
         private Logger logger = LogManager.GetCurrentClassLogger();
-        public string Url { get; }
 
-        public SkyResultParser(string Url)
-        {
-            this.Url = Url;
-        }
-
-        public FixtureResponse GetFixtures()
+        public FixtureResponse GetFixtures(string Url)
         {
 
             var ret = new FixtureResponse();

@@ -5,11 +5,11 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="Player" /> class.
         /// </summary>
-        /// <param name="id">The id.</param>
-        /// <param name="name">The name.</param>
-        /// <param name="nickName">Name of the nick.</param>
-        /// <param name="email">The email.</param>
-        /// <param name="isAdmin">if set to <c>true</c> [is admin].</param>
+        /// <param name="id">The id of the player.</param>
+        /// <param name="name">The name of the player.</param>
+        /// <param name="nickName">Nickname/username of the player.</param>
+        /// <param name="email">The players email.</param>
+        /// <param name="isAdmin">if set to <c>true</c> the player is an administrator.</param>
         public Player(int id, string name, string nickName, string email, bool isAdmin)
         {
             NickName = nickName;
@@ -20,15 +20,15 @@
         }
 
         /// <summary>
-        /// Gets or sets the first name.
+        /// Gets the name of the player.
         /// </summary>
         /// <value>
-        /// The first name.
+        /// The name.
         /// </value>
         public string Name { get; }
 
         /// <summary>
-        /// Gets or sets the nick name.
+        /// Gets the nick name/username of the player.
         /// </summary>
         /// <value>
         /// The nick name.
@@ -37,7 +37,7 @@
 
 
         /// <summary>
-        /// Gets or sets the email.
+        /// Gets the players email address.
         /// </summary>
         /// <value>
         /// The email.
@@ -45,7 +45,7 @@
         public string Email { get; }
 
         /// <summary>
-        /// Gets or sets the id.
+        /// Gets the players id.
         /// </summary>
         /// <value>
         /// The id.
@@ -53,10 +53,10 @@
         public int Id { get; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this instance is an administrator.
+        /// Gets or sets a value indicating whether this player is an administrator.
         /// </summary>
         /// <value>
-        ///   <c>true</c> if this instance is an administrator; otherwise, <c>false</c>.
+        ///   <c>true</c> if this player is an administrator; otherwise, <c>false</c>.
         /// </value>
         public bool IsAdmin { get; }
 
@@ -64,6 +64,5 @@
         {
             return NickName;
         }
-
     }
 }

@@ -4,6 +4,6 @@
 
     public interface IFixtureParser
     {
-        FixtureResponse GetFixtures();
+        FixtureResponse GetFixtures(string Url);
     }
 }

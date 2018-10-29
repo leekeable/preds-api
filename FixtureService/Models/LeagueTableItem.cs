@@ -5,7 +5,7 @@
 
     public class LeagueTableItem : IComparable
     {
-        public LeagueTableItem(string name, List<Trophy> trophies, int played, int results, int score, int bonus, int points)
+        public LeagueTableItem(string name, List<Trophy> trophies, int played, int results, int score, int bonus, int points, bool loggedInUser)
         {
             Name = name;
             Trophies = trophies;
@@ -14,6 +14,7 @@
             Score = score;
             Bonus = bonus;
             Points = points;
+            LoggedInUser = loggedInUser;
         }
 
         public string Name { get; }
@@ -23,6 +24,7 @@
         public int Score { get; }
         public int Bonus { get; }
         public int Points { get; }
+        public bool LoggedInUser { get; }
 
         public int CompareTo(object obj)
         {

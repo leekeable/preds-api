@@ -1,15 +1,20 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FixtureService.Infrastructure;
+using FixtureService.ScreenScraping;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace FixtureService
 {
-    // TODO: Add Oauth2
-
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -22,18 +27,48 @@ namespace FixtureService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new Info { Title = "FootyPreds API", Version = "v1" });
+                options.AddSecurityDefinition("Bearer", new ApiKeyScheme
+                {
+                    In = "header",
+                    Description = "Please enter JWT with Bearer into field",
+                    Name = "Authorization",
+                    Type = "apiKey"
+                });
+                options.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>>
+                {
+                    {"Bearer", Enumerable.Empty<string>()},
+                });
+            });
+
             services.AddCors();
             services.AddMemoryCache();
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
-            .AddJsonOptions(o =>
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateAudience = false,
+                    ValidateIssuer = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"])),
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(5),
+                };
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = false;
+            });
+            services.AddMvc().AddJsonOptions(o =>
             {
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
             });
-
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info { Title = "FootyPreds API", Version = "v1" });
-            });
+            services.AddScoped<IDataContext, DataContext>();
+            services.AddScoped<IFixtureParser, SkyResultParser>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -61,9 +96,9 @@ namespace FixtureService
                 c.RoutePrefix = string.Empty;
             });
 
+            app.UseAuthentication();
             app.UseCors(builder =>
                 builder.AllowAnyOrigin());
-
             app.UseMvc();
         }
     }
