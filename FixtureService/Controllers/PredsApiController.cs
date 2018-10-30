@@ -20,7 +20,7 @@
         private IMemoryCache _cache;
         private Logger logger = LogManager.GetCurrentClassLogger();
         private IDataContext _context;
-        private IFixtureParser _parser;// = new SkyResultParser();
+        private IFixtureParser _parser;
         public PredsApiController(IMemoryCache memoryCache, IConfiguration configuration, IDataContext context, IFixtureParser parser) : base(configuration, context)
         {
             _cache = memoryCache;
@@ -44,7 +44,7 @@
 
         [HttpGet]
         [Route("upcomingfixtures")]
-        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(401)]
         public ActionResult<IEnumerable<Fixture>> UpcomingFixtures()
         {
             var username = GetUserName();
@@ -53,6 +53,7 @@
 
         [HttpGet]
         [Route("leaguetable")]
+        [ProducesResponseType(401)]
         public ActionResult<IEnumerable<LeagueTableItem>> LeagueTable()
         {
             IEnumerable<LeagueTableItem> league;
@@ -71,6 +72,7 @@
 
         [HttpGet]
         [Route("fixtures/{teamname}")]
+        [ProducesResponseType(401)]
         public ActionResult<IEnumerable<Fixture>> GetFixtures(string teamname)
         {
             var skypath = teamname.ToLower().Replace(".", "-") + "-fixtures";
@@ -79,6 +81,7 @@
 
         [HttpGet]
         [Route("results/{teamname}")]
+        [ProducesResponseType(401)]
         public ActionResult<IEnumerable<Fixture>> GetResultsFixtures(string teamname)
         {
             var skypath = teamname.ToLower().Replace(".", "-") + "-results";
