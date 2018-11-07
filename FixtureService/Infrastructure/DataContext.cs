@@ -5,6 +5,7 @@
     using System;
     using System.Collections.Generic;
     using System.Data.SqlClient;
+
     public class DataContext : IDataContext
     {
         protected readonly string connectionString;
@@ -14,6 +15,7 @@
         {
             this.configuration = configuration;
             connectionString = configuration.GetConnectionString("FootyPreds");
+
         }
         public bool IsValidUsernameAndPassword(string userName, string password)
         {
@@ -108,91 +110,234 @@
             return players;
         }
 
-        public IEnumerable<LeagueTableItem> GetLeagueTable(string userName)
+        /// <summary>
+        /// Gets the weeks fixtures.
+        /// </summary>
+        /// <param name="week">The week.</param>
+        /// <returns></returns>
+        public IEnumerable<Fixture> GetWeeksFixtures(int week)
         {
-            List<LeagueTableItem> league;
-            // this is way too slow
-            List<Player> players = GetPlayers();
-            league = new List<LeagueTableItem>();
+            var fixtures = new List<Fixture>();
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT Id FROM Fixtures WHERE Week = {week} ORDER BY Date ASC";
+                    var reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        var fixture = GetFixture(reader.GetInt64(reader.GetOrdinal("Id")));
+                        fixtures.Add(fixture);
+                    }
+                }
+                return fixtures;
+            }
+        }
+
+        /// <summary>
+        /// Gets the team.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns></returns>
+        public Team GetTeam(string name)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT Id, Url FROM TeamUrl WHERE TeamName = '{name}'";
+                    var reader = command.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        return new Team
+                        {
+                            Name = name,
+                            Url = reader.GetString(reader.GetOrdinal("Url")),
+                            Badge = BuildBadgePath(reader.GetInt32(reader.GetOrdinal("Id")))
+                        };
+                    }
+                    else
+                    {
+                        return new Team
+                        {
+                            Name = name
+                        };
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Builds the badge path.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns></returns>
+        private string BuildBadgePath(int id)
+        {
+            var path = string.Format(configuration["Badges"], id);
+            return path;
+        }
+
+        /// <summary>
+        /// Gets the fixture.
+        /// </summary>
+        /// <param name="id">The id.</param>
+        /// <returns></returns>
+        public Fixture GetFixture(long id)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT Fixtures.HomeTeam, Fixtures.AwayTeam, Fixtures.Date, Fixtures.CompetitionId, Fixtures.Week, Results.HomeScore, Results.AwayScore FROM Fixtures LEFT JOIN Results ON Fixtures.Id = Results.Id WHERE Fixtures.Id = {id}";
+                    var reader = command.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        var c = GetCompetition(reader.GetInt32(reader.GetOrdinal("CompetitionId")));
+
+                        var homeTeam = GetTeam(reader.GetString(reader.GetOrdinal("HomeTeam")));
+                        var awayTeam = GetTeam(reader.GetString(reader.GetOrdinal("AwayTeam")));
+
+                        var date = reader.GetDateTime(reader.GetOrdinal("Date"));
+                        int? week = null;
+                        if (!reader.IsDBNull(reader.GetOrdinal("Week")))
+                        {
+                            week = reader.GetInt32(reader.GetOrdinal("Week"));
+                        }
+
+                        int? homescore = null;
+                        if (!reader.IsDBNull(reader.GetOrdinal("HomeScore")))
+                        {
+                            homescore = reader.GetInt32(reader.GetOrdinal("HomeScore"));
+                        }
+
+                        int? awayscore = null;
+                        if (!reader.IsDBNull(reader.GetOrdinal("AwayScore")))
+                        {
+                            awayscore = reader.GetInt32(reader.GetOrdinal("AwayScore"));
+                        }
+
+                        return new Fixture
+                        {
+                            Kickoff = date,
+                            HomeTeam = homeTeam,
+                            AwayTeam = awayTeam,
+                            HomeScore = homescore,
+                            AwayScore = awayscore,
+                            Competition = c,
+                            Id = id
+                        };
+                    }
+                    return null;
+                }
+            }
+        }
+
+        public Competition GetCompetition(string name)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT Description, AlternateDesc, url FROM Competitions WHERE (Description = '{name}') OR (AlternateDesc = '{name}'";
+                    var reader = command.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        return new Competition
+                        {
+                            Name = reader.GetString(reader.GetOrdinal("Description")),
+                            Url = reader.GetString(reader.GetOrdinal("Url"))
+                        };
+                    }
+                    return null;
+                }
+            }
+
+        }
+
+        public Competition GetCompetition(int id)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT Description, url FROM Competitions WHERE Id = {id}";
+                    var reader = command.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        return new Competition
+                        {
+                            Name = reader.GetString(reader.GetOrdinal("Description")),
+                            Url = reader.GetString(reader.GetOrdinal("Url"))
+                        };
+                    }
+                    return null;
+                }
+            }
+        }
+
+
+
+        /// <summary>
+        /// Updates the email address.
+        /// </summary>
+        /// <param name="userName">Name of the user.</param>
+        /// <param name="email">The email.</param>
+        public bool UpdateEmailAddress(string userName, string email)
+        {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
-                int pld = 0;
                 using (var command = connection.CreateCommand())
                 {
-                    // games played
-                    var playedSql = "SELECT COUNT(Id) FROM Results";
-                    command.CommandText = playedSql;
-                    pld = (int)command.ExecuteScalar();
+                    command.CommandText = $"UPDATE Players SET Email = '{email}' WHERE NickName = '{userName}'";
+                    command.ExecuteNonQuery();
+                    return true;
                 }
+            }
+        }
 
-                foreach (Player p in players)
+        /// <summary>
+        /// Changes the password.
+        /// </summary>
+        /// <param name="userName">Name of the user.</param>
+        /// <param name="newPassword">The new password.</param>
+        /// <returns></returns>
+        public bool ChangePassword(string userName, string newPassword)
+        {
+            //if (IsValidUsernameAndPassword(userName, currentpassword))
+            //{
+            try
+            {
+                var crypto = new SimpleCrypto.PBKDF2();
+                var hashedPassword = crypto.Compute(newPassword);
+                var salt = crypto.Salt;
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
+                    connection.Open();
+
                     using (var command = connection.CreateCommand())
                     {
-                        var predictedSql = $"SELECT COUNT(FixtureId) FROM Predictions WHERE Predictions.PlayerId = {p.Id}";
-                        // Home Wins
-                        var homewinsSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore > Predictions.AwayScore AND Results.HomeScore > Results.AwayScore";
-                        // Away wins
-                        var awaywinsSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore < Predictions.AwayScore AND Results.HomeScore < Results.AwayScore";
-                        // draws 
-                        var drawsSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore = Predictions.AwayScore AND Results.HomeScore = Results.AwayScore";
-                        // number of scores
-                        var scoresSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore = Results.HomeScore AND Predictions.AwayScore = Results.AwayScore";
-                        // calculate bonus points....
-                        var nogoalsSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore = Results.HomeScore AND Predictions.AwayScore = Results.AwayScore AND (Predictions.HomeScore + Predictions.AwayScore) = 0";
-                        var threegoalsSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore = Results.HomeScore AND Predictions.AwayScore = Results.AwayScore AND (Predictions.HomeScore + Predictions.AwayScore) > 3 AND (Predictions.HomeScore + Predictions.AwayScore) <= 6";
-                        var sevengoalsSql = $"SELECT COUNT(FixtureId) FROM Predictions, Results WHERE Predictions.FixtureId = Results.Id AND Predictions.PlayerId = {p.Id} AND Predictions.HomeScore = Results.HomeScore AND Predictions.AwayScore = Results.AwayScore AND (Predictions.HomeScore + Predictions.AwayScore) > 6";
-
-                        var starsSql = $"SELECT TournamentName, ImageUrl FROM Winners WHERE WinnerName = '{p.NickName}'";
-
-                        command.CommandText = predictedSql;
-                        var prds = (int)command.ExecuteScalar();
-
-                        command.CommandText = homewinsSql;
-                        var res = (int)command.ExecuteScalar();
-
-                        command.CommandText = awaywinsSql;
-                        res += (int)command.ExecuteScalar();
-
-                        command.CommandText = drawsSql;
-                        res += (int)command.ExecuteScalar();
-
-                        command.CommandText = scoresSql;
-                        var scrs = (int)command.ExecuteScalar();
-
-                        res = res - scrs;
-
-                        command.CommandText = nogoalsSql;
-                        var nogoals = (int)command.ExecuteScalar();
-
-                        command.CommandText = threegoalsSql;
-                        var threegoals = (int)command.ExecuteScalar();
-
-                        command.CommandText = sevengoalsSql;
-                        var sevengoals = (int)command.ExecuteScalar();
-
-                        command.CommandText = starsSql;
-                        var starsRdr = command.ExecuteReader();
-
-                        var starsList = new List<Trophy>();
-
-                        while (starsRdr.Read())
-                        {
-                            starsList.Add(new Trophy((string)starsRdr["TournamentName"], (string)starsRdr["ImageUrl"]));
-                        }
-
-                        var bonus = nogoals + (threegoals * 2) + (sevengoals * 3);
-                        var total = res + (scrs * 3) + bonus;
-
-                        var lti = new LeagueTableItem(p.NickName, starsList, pld, res, scrs, bonus, total, userName == p.NickName);
-                        league.Add(lti);
+                        command.CommandText = $"UPDATE Players SET Password = '{hashedPassword}', PasswordSalt = '{salt}' WHERE NickName = '{userName}'";
+                        command.ExecuteNonQuery();
+                        return true;
                     }
                 }
             }
-            league.Sort();
-            return league;
+            catch
+            {
+                // do some logging
+                return false;
+            }
+            //}
+            //return false;
         }
     }
 }

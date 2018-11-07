@@ -1,5 +1,6 @@
 ﻿using FixtureService.Infrastructure;
 using FixtureService.ScreenScraping;
+using FixtureService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -67,6 +68,8 @@ namespace FixtureService
             {
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
             });
+            services.AddScoped<ILeagueTableService, LeagueTableService>();
+            services.AddScoped<ITokenGeneratorService, TokenGeneratorService>();
             services.AddScoped<IDataContext, DataContext>();
             services.AddScoped<IFixtureParser, SkyResultParser>();
         }

@@ -3,6 +3,7 @@
     using FixtureService.Infrastructure;
     using FixtureService.Models;
     using FixtureService.ScreenScraping;
+    using FixtureService.Services;
     using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
@@ -11,41 +12,49 @@
     using NLog;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     [Route("/")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class PredsApiController : PredsApiControllerBase
     {
-        private IMemoryCache _cache;
+        private readonly IMemoryCache cache;
         private Logger logger = LogManager.GetCurrentClassLogger();
-        private IDataContext _context;
-        private IFixtureParser _parser;
-        public PredsApiController(IMemoryCache memoryCache, IConfiguration configuration, IDataContext context, IFixtureParser parser) : base(configuration, context)
+        private readonly IDataContext context;
+        private readonly IFixtureParser parser;
+        private readonly ILeagueTableService leagueTableService;
+        public PredsApiController(IMemoryCache cache, IConfiguration configuration, IDataContext context, 
+                                  IFixtureParser parser, ILeagueTableService leagueTableService)
         {
-            _cache = memoryCache;
-            _context = context;
-            _parser = parser;
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [Route("createtoken")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        public IActionResult CreateToken([FromBody] LoginModel login)
-        {
-            if (context.IsValidUsernameAndPassword(login.UserName, login.Password))
-            {
-                return Ok(this.GenerateToken(login));
-            }
-            return BadRequest();
+            this.cache = cache;
+            this.context = context;
+            this.parser = parser;
+            this.leagueTableService = leagueTableService;
         }
 
         [HttpGet]
-        [Route("upcomingfixtures")]
-        [ProducesResponseType(401)]
-        public ActionResult<IEnumerable<Fixture>> UpcomingFixtures()
+        [Route("fixtures/weeksfixtures")]
+        public ActionResult<IEnumerable<Fixture>> GetWeeksFixtures(int week)
+        {
+            var weeksfixtures = context.GetWeeksFixtures(week);
+            if (!weeksfixtures.Any())
+            {
+                return NotFound();
+            }
+            return Ok(weeksfixtures);
+        }
+
+        [HttpGet]
+        [Route("fixtures/week")]
+        public ActionResult<int> GetWeek()
+        {
+            return Ok(context.GetWeek());
+        }
+
+        [HttpGet]
+        [Route("fixtures/upcomingfixtures")]
+        public ActionResult<IEnumerable<Fixture>> GetUpcomingFixtures()
         {
             var username = GetUserName();
             return new List<Fixture>();
@@ -53,26 +62,25 @@
 
         [HttpGet]
         [Route("leaguetable")]
-        [ProducesResponseType(401)]
         public ActionResult<IEnumerable<LeagueTableItem>> LeagueTable()
         {
             IEnumerable<LeagueTableItem> league;
             var username = GetUserName();
 
-            if (!_cache.TryGetValue("leaguetable", out league))
+            if (!cache.TryGetValue("leaguetable", out league))
             {
-                league = context.GetLeagueTable(username);
+                league = leagueTableService.GetLeagueTable(username);
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromHours(1));
-                _cache.Set("leaguetable", league, cacheEntryOptions);
+                cache.Set("leaguetable", league, cacheEntryOptions);
             }
+            logger.Debug($"leagueTable returned to {GetUserName()}");
             return Ok(league);
         }
 
         [HttpGet]
         [Route("fixtures/{teamname}")]
-        [ProducesResponseType(401)]
         public ActionResult<IEnumerable<Fixture>> GetFixtures(string teamname)
         {
             var skypath = teamname.ToLower().Replace(".", "-") + "-fixtures";
@@ -81,22 +89,22 @@
 
         [HttpGet]
         [Route("results/{teamname}")]
-        [ProducesResponseType(401)]
-        public ActionResult<IEnumerable<Fixture>> GetResultsFixtures(string teamname)
+        public ActionResult<IEnumerable<Fixture>> GetResults(string teamname)
         {
             var skypath = teamname.ToLower().Replace(".", "-") + "-results";
             return RetrieveFixtures(skypath);
         }
+
         private ActionResult<IEnumerable<Fixture>> RetrieveFixtures(string teamname)
         {
             IEnumerable<Fixture> fixtures = null;
             try
             {
-                if (!_cache.TryGetValue(teamname, out fixtures))
+                if (!cache.TryGetValue(teamname, out fixtures))
                 {
                     logger.Info($"{teamname} not cached");
                     
-                    var results = _parser.GetFixtures($"http://www.skysports.com/{teamname}");
+                    var results = parser.GetFixtures($"http://www.skysports.com/{teamname}");
                     if (results.StatusCode == System.Net.HttpStatusCode.OK)
                     {
                         // Set cache options.
@@ -106,7 +114,7 @@
                             .SetAbsoluteExpiration(TimeSpan.FromHours(12));
 
                         // Save data in cache.
-                        _cache.Set(teamname, results.Fixtures, cacheEntryOptions);
+                        cache.Set(teamname, results.Fixtures, cacheEntryOptions);
                         logger.Info($"{teamname} added to cache");
                         return Ok(results.Fixtures);
                     }

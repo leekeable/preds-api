@@ -5,10 +5,10 @@
 
     public class Fixture
     {
-        public int Id { get; set; }
-        public string HomeTeam { get; set; }
-        public string AwayTeam { get; set; }
-        public string Competition { get; set; }
+        public long Id { get; set; }
+        public Team HomeTeam { get; set; }
+        public Team AwayTeam { get; set; }
+        public Competition Competition { get; set; }
         public DateTime Kickoff { get; set; }
         public int? HomeScore { get; set; }
         public int? AwayScore { get; set; }
@@ -20,5 +20,18 @@
                 return HomeScore.HasValue && AwayScore.HasValue;
             }
         }
+    }
+
+    public class Team
+    {
+        public string Badge { get; set; }
+        public string Name { get; set; }
+        public string Url { get; set; }
+    }
+
+    public class Competition
+    {
+        public string Name { get; set; }
+        public string Url { get; set; }
     }
 }

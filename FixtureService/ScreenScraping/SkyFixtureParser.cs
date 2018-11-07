@@ -1,5 +1,6 @@
 ﻿namespace FixtureService.ScreenScraping
 {
+    using FixtureService.Infrastructure;
     using FixtureService.Models;
     using HtmlAgilityPack;
     using NLog;
@@ -7,6 +8,11 @@
     using System.Globalization;
     public class SkyResultParser : IFixtureParser
     {
+        private readonly IDataContext context;
+        public SkyResultParser(IDataContext context)
+        {
+            this.context = context;
+        }
         private Logger logger = LogManager.GetCurrentClassLogger();
 
         public FixtureResponse GetFixtures(string Url)
@@ -82,10 +88,10 @@
                             var f = new Fixture
                             {
                                 Id = id,
-                                HomeTeam = hometeam,
-                                AwayTeam = awayteam,
+                                HomeTeam = context.GetTeam(hometeam),
+                                AwayTeam = context.GetTeam(awayteam),
                                 Kickoff = kickoff,
-                                Competition = competition
+                                Competition = context.GetCompetition(competition)
                             };
                             if (status.ToUpper() == "FT")
                             {
