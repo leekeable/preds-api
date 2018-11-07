@@ -21,17 +21,4 @@
             }
         }
     }
-
-    public class Team
-    {
-        public string Badge { get; set; }
-        public string Name { get; set; }
-        public string Url { get; set; }
-    }
-
-    public class Competition
-    {
-        public string Name { get; set; }
-        public string Url { get; set; }
-    }
 }
