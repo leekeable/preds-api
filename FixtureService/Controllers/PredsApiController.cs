@@ -116,6 +116,10 @@
                         // Save data in cache.
                         cache.Set(teamname, results.Fixtures, cacheEntryOptions);
                         logger.Info($"{teamname} added to cache");
+                        if (!results.Fixtures.Any())
+                        {
+                            return BadRequest();
+                        }
                         return Ok(results.Fixtures);
                     }
                     else
