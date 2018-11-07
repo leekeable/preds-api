@@ -244,7 +244,7 @@
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = $"SELECT Description, AlternateDesc, url FROM Competitions WHERE (Description = '{name}') OR (AlternateDesc = '{name}'";
+                    command.CommandText = $"SELECT Description, AlternateDesc, url FROM Competitions WHERE (Description = '{name}') OR (AlternateDesc = '{name}')";
                     var reader = command.ExecuteReader();
                     if (reader.Read())
                     {
